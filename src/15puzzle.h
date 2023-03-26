@@ -8,8 +8,6 @@
 #include <queue>
 #include <string>
 
-#include "15puzzle_solver.h"
-
 #define PUZZLE_SIZE 3
 
 namespace puzzle {
@@ -110,13 +108,13 @@ public:
             neighbors[len] |= (empty << (curr_offset - empty_offset));
             ++len;
         }
-        if (int curr_offset = empty_offset - offset; curr_offset > 0) {
+        if (int curr_offset = empty_offset - offset; curr_offset >= 0) {
             permut_type curr_mask = mask << curr_offset;
             neighbors[len] = ((clean_permut & curr_mask) << offset) | (clean_permut & ~curr_mask);
             neighbors[len] |= (empty >> offset);
             ++len;
         }
-        if (int curr_offset = empty_offset - psize * offset; curr_offset > 0) {
+        if (int curr_offset = empty_offset - psize * offset; curr_offset >= 0) {
             permut_type curr_mask = mask << curr_offset;
             neighbors[len] = ((clean_permut & curr_mask) << (empty_offset - curr_offset)) | (clean_permut & ~curr_mask);
             neighbors[len] |= (empty >> (empty_offset - curr_offset));
@@ -137,9 +135,5 @@ public:
     }
 };
 //}  // namespace internal
-
-template <uint32_t psize = PUZZLE_SIZE, typename Heuristic>
-auto find_solution(permut_type initial, Heuristic heuristic_dist) {
-}
 
 }  // namespace puzzle

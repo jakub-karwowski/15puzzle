@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <variant>
 #include <vector>
 
@@ -58,7 +59,7 @@ class puzzle_queue {
 
 public:
     void push(permut_type entry, permut_type parent, uint32_t dist_to, uint32_t dist_from) {
-        permut_queue.emplace_back(entry, dist_to + dist_from);
+        permut_queue.push_back(queue_entry{entry, dist_to + dist_from});
         size_t i = permut_queue.size() - 1;
         auto& current_m_entry = (permut_map[entry] = map_entry{parent, static_cast<uint32_t>(i), dist_to});
         while (i > 0 && comp(permut_queue[i], permut_queue[puzzle_queue::parent(i)])) {
@@ -80,10 +81,9 @@ public:
     bool empty() const {
         return permut_queue.empty();
     }
-    void decrease_key(permut_type entry, permut_type parent_new, uint32_t dist_to_new, uint32_t dist_from_new) {
-        auto& current_m_entry = permut_map[entry];
+    void decrease_key(map_entry& current_m_entry, permut_type parent_new, uint32_t dist_to_new) {
         size_t i = current_m_entry.queue_index;
-        permut_queue[i].key = dist_from_new + dist_to_new;
+        permut_queue[i].key -= (current_m_entry.dist_to - dist_to_new);
         current_m_entry.dist_to = dist_to_new;
         current_m_entry.parent = parent_new;
         while (i > 0 && comp(permut_queue[i], permut_queue[puzzle_queue::parent(i)])) {
@@ -94,7 +94,52 @@ public:
             current_m_entry = parent_m_entry;
         }
     }
-    void update(permut_type current, permut_type neighbor) {
+    void decrease_key(permut_type entry, permut_type parent_new, uint32_t dist_to_new) {
+        auto& current_m_entry = permut_map[entry];
+        decrease_key(current_m_entry, parent_new, dist_to_new);
+    }
+    map_entry* find_in_map(permut_type element) {
+        auto res = permut_map.find(element);
+        if (res != permut_map.end()) {
+            return &res->second;
+        }
+        return nullptr;
     }
 };
+
+template <uint32_t psize = PUZZLE_SIZE, typename Heuristic>
+auto find_solution(permut_type initial, Heuristic heuristic_dist) {
+    constexpr auto create_goal = []() -> permut_type {
+        if constexpr (psize == 3) {
+            return permut_create({0, 1, 2, 3, 4, 5, 6, 7, 8});
+        }
+        return permut_create({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    };
+    constexpr permut_type goal = create_goal();
+    puzzle_queue queue;
+    queue.push(initial, 0, 0, heuristic_dist(initial));
+    while (!queue.empty()) {
+        auto current = queue.top();
+        if (current.permut == goal) {
+            std::cout << permut_to_string(current.permut) << "\n\n";
+            return true;
+        }
+        queue.pop();
+        auto current_map_entry = *(queue.find_in_map(current.permut));
+        permut_neighbors_itr<psize> neigbours(current.permut);
+        for (auto n : neigbours) {
+            uint32_t dist_new = current_map_entry.dist_to + 1;
+            map_entry* neigbour_map_entry = queue.find_in_map(n);
+            if (neigbour_map_entry != nullptr) {
+                if (dist_new < neigbour_map_entry->dist_to) {
+                    queue.decrease_key(*neigbour_map_entry, current.permut, dist_new);
+                }
+            } else {
+                queue.push(n, current.permut, dist_new, heuristic_dist(n));
+            }
+        }
+    }
+    return false;
+}
+
 }  // namespace puzzle
