@@ -108,7 +108,7 @@ public:
             neighbors[len] |= (empty << (curr_offset - empty_offset));
             ++len;
         }
-        if (int curr_offset = empty_offset - offset; curr_offset >= 0) {
+        if (int curr_offset = empty_offset - offset; curr_offset >= 0 && empty_offset / (psize * offset) == curr_offset / (psize * offset)) {
             permut_type curr_mask = mask << curr_offset;
             neighbors[len] = ((clean_permut & curr_mask) << offset) | (clean_permut & ~curr_mask);
             neighbors[len] |= (empty >> offset);
@@ -120,7 +120,7 @@ public:
             neighbors[len] |= (empty >> (empty_offset - curr_offset));
             ++len;
         }
-        if (int curr_offset = empty_offset + offset; curr_offset <= max_offset) {
+        if (int curr_offset = empty_offset + offset; curr_offset <= max_offset && empty_offset / (psize * offset) == curr_offset / (psize * offset)) {
             permut_type curr_mask = mask << curr_offset;
             neighbors[len] = ((clean_permut & curr_mask) >> offset) | (clean_permut & ~curr_mask);
             neighbors[len] |= (empty << offset);

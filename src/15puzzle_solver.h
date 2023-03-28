@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <map>
 #include <optional>
 #include <variant>
@@ -61,10 +62,10 @@ public:
     void push(permut_type entry, permut_type parent, uint32_t dist_to, uint32_t dist_from) {
         permut_queue.push_back(queue_entry{entry, dist_to + dist_from});
         size_t i = permut_queue.size() - 1;
-        auto& current_m_entry = (permut_map[entry] = map_entry{parent, static_cast<uint32_t>(i), dist_to});
+        map_entry* current_m_entry = &(permut_map[entry] = map_entry{parent, static_cast<uint32_t>(i), dist_to});
         while (i > 0 && comp(permut_queue[i], permut_queue[puzzle_queue::parent(i)])) {
-            auto& parent_m_entry = permut_map[puzzle_queue::parent(i)];
-            std::swap(current_m_entry.queue_index, parent_m_entry.queue_index);
+            map_entry* parent_m_entry = &permut_map[permut_queue[puzzle_queue::parent(i)].permut];
+            std::swap(current_m_entry->queue_index, parent_m_entry->queue_index);
             std::swap(permut_queue[i], permut_queue[puzzle_queue::parent(i)]);
             i = puzzle_queue::parent(i);
             current_m_entry = parent_m_entry;
@@ -82,16 +83,17 @@ public:
         return permut_queue.empty();
     }
     void decrease_key(map_entry& current_m_entry, permut_type parent_new, uint32_t dist_to_new) {
-        size_t i = current_m_entry.queue_index;
-        permut_queue[i].key -= (current_m_entry.dist_to - dist_to_new);
-        current_m_entry.dist_to = dist_to_new;
-        current_m_entry.parent = parent_new;
+        map_entry* current_m_entry_ptr = &current_m_entry;
+        size_t i = current_m_entry_ptr->queue_index;
+        permut_queue[i].key -= (current_m_entry_ptr->dist_to - dist_to_new);
+        current_m_entry_ptr->dist_to = dist_to_new;
+        current_m_entry_ptr->parent = parent_new;
         while (i > 0 && comp(permut_queue[i], permut_queue[puzzle_queue::parent(i)])) {
-            auto& parent_m_entry = permut_map[puzzle_queue::parent(i)];
-            std::swap(current_m_entry.queue_index, parent_m_entry.queue_index);
+            map_entry* parent_m_entry = &permut_map[permut_queue[puzzle_queue::parent(i)].permut];
+            std::swap(current_m_entry_ptr->queue_index, parent_m_entry->queue_index);
             std::swap(permut_queue[i], permut_queue[puzzle_queue::parent(i)]);
             i = puzzle_queue::parent(i);
-            current_m_entry = parent_m_entry;
+            current_m_entry_ptr = parent_m_entry;
         }
     }
     void decrease_key(permut_type entry, permut_type parent_new, uint32_t dist_to_new) {
@@ -107,6 +109,21 @@ public:
     }
 };
 
+void get_solution_steps(puzzle_queue& queue, permut_type initial, permut_type goal) {
+    std::vector<permut_type> steps;
+    while (goal != initial) {
+        steps.push_back(goal);
+        goal = queue.find_in_map(goal)->parent;
+    }
+    std::cout << steps.size() << "\n\n";
+    std::cout << permut_to_string(initial) << "\n\n";
+    auto it = steps.rbegin();
+    while (it != steps.rend()) {
+        std::cout << permut_to_string(*it) << "\n\n";
+        ++it;
+    }
+}
+
 template <uint32_t psize = PUZZLE_SIZE, typename Heuristic>
 auto find_solution(permut_type initial, Heuristic heuristic_dist) {
     constexpr auto create_goal = []() -> permut_type {
@@ -121,7 +138,7 @@ auto find_solution(permut_type initial, Heuristic heuristic_dist) {
     while (!queue.empty()) {
         auto current = queue.top();
         if (current.permut == goal) {
-            std::cout << permut_to_string(current.permut) << "\n\n";
+            get_solution_steps(queue, initial, goal);
             return true;
         }
         queue.pop();

@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-Wall -Wextra -std=c++20
+CXXFLAGS=-Wall -Wextra -pedantic -std=c++20
 
 BUILD_DIR=./build
 SRC_DIR = ./src
