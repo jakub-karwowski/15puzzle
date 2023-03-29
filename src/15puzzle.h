@@ -4,16 +4,38 @@
 #include <bit>
 #include <cstdint>
 #include <initializer_list>
-#include <map>
-#include <queue>
+#include <iomanip>
+#include <iostream>
 #include <string>
-
-#define PUZZLE_SIZE 3
 
 namespace puzzle {
 using permut_type = uint64_t;
 
-template <uint32_t psize = PUZZLE_SIZE>
+template <uint32_t psize>
+constexpr permut_type permut_create_from_partial(std::array<uint32_t, psize * psize - 1>& arr) {
+    constexpr auto offset = std::bit_width(psize * psize - 1);
+    permut_type ret_p = 0;
+    for (auto e : arr) {
+        ret_p <<= offset;
+        ret_p |= static_cast<permut_type>(e);
+    }
+    ret_p <<= offset;
+    ret_p |= static_cast<permut_type>(psize * psize - 1);
+    return ret_p;
+}
+
+template <uint32_t psize>
+constexpr permut_type permut_create(std::array<uint32_t, psize * psize>& arr) {
+    constexpr auto offset = std::bit_width(psize * psize - 1);
+    permut_type ret_p = 0;
+    for (auto e : arr) {
+        ret_p <<= offset;
+        ret_p |= static_cast<permut_type>(e);
+    }
+    return ret_p;
+}
+
+template <uint32_t psize>
 constexpr permut_type permut_create(std::initializer_list<uint32_t> p) {
     constexpr auto offset = std::bit_width(psize * psize - 1);
     permut_type ret_p = 0;
@@ -24,7 +46,38 @@ constexpr permut_type permut_create(std::initializer_list<uint32_t> p) {
     return ret_p;
 }
 
-template <uint32_t psize = PUZZLE_SIZE>
+template <uint32_t array_size>
+constexpr bool parity_check(std::array<unsigned, array_size>& arr) {
+    size_t inv_count = 0;
+    for (size_t i = 1; i < arr.size(); ++i) {
+        for (size_t j = 0; j < i; ++j) {
+            if (arr[i] < arr[j]) {
+                ++inv_count;
+            }
+        }
+    }
+    return inv_count % 2 == 0;
+}
+
+template <uint32_t psize>
+permut_type permut_read(std::istream& stream) {
+    std::array<uint32_t, psize * psize> arr;
+    for (uint32_t i = 0; i < psize * psize; ++i) {
+        if (!stream >> arr[i]) {
+            return 0;
+        }
+        arr[i] += (psize - 1);
+        arr[i] %= psize;
+    }
+    return permut_create(arr);
+}
+
+template <uint32_t psize>
+bool permut_check(std::array<unsigned, psize * psize> arr) {
+    return arr[psize * psize - 1] != psize * psize - 1 && parity_check<psize * psize>(arr);
+}
+
+template <uint32_t psize>
 std::array<uint32_t, psize * psize> permut_to_array(permut_type p) {
     constexpr int offset = std::bit_width(psize * psize - 1);
     constexpr uint32_t mask = ~(~0U << offset);
@@ -36,23 +89,17 @@ std::array<uint32_t, psize * psize> permut_to_array(permut_type p) {
     return ret_arr;
 }
 
-template <uint32_t psize = PUZZLE_SIZE>
-std::string permut_to_string(permut_type permut) {
-    std::string result;
-    result.reserve(psize * psize * 2);
+template <uint32_t psize>
+std::ostream& permut_write(std::ostream& stream, permut_type permut, int width = 2) {
     auto arr = puzzle::permut_to_array<psize>(permut);
-    for (unsigned counter = 0; auto e : arr) {
-        if (counter % psize == 0 && counter > 0) {
-            result += '\n';
-        }
-        result += std::to_string(e /*(e + 1) % (psize * psize)*/);
-        result += ' ';
-        ++counter;
+    for (size_t i = 0; i < psize * psize; ++i) {
+        stream << std::setw(width) << (arr[i] + 1) % (psize * psize);
+        stream << (i % psize == (psize - 1) ? '\n' : ' ');
     }
-    return result;
+    return stream;
 }
 
-template <uint32_t psize = PUZZLE_SIZE>
+template <uint32_t psize>
 uint32_t manhattan_dist(permut_type a) {
     constexpr int offset = std::bit_width(psize * psize - 1);
     constexpr uint32_t mask = ~(~0U << offset);
@@ -73,7 +120,7 @@ uint32_t manhattan_dist(permut_type a) {
     return dist;
 }
 
-template <uint32_t psize = PUZZLE_SIZE>
+template <uint32_t psize>
 constexpr int find_empty(permut_type permut) {
     constexpr int offset = std::bit_width(psize * psize - 1);
     constexpr permut_type mask = ~(~0U << offset);
@@ -88,7 +135,7 @@ constexpr int find_empty(permut_type permut) {
 
 // namespace internal {
 
-template <uint32_t psize = PUZZLE_SIZE>
+template <uint32_t psize>
 class permut_neighbors_itr {
     permut_type neighbors[4];
     unsigned len = 0;

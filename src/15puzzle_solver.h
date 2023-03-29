@@ -107,41 +107,43 @@ public:
         }
         return nullptr;
     }
+    size_t map_size() const {
+        return permut_map.size();
+    }
 };
 
-void get_solution_steps(puzzle_queue& queue, permut_type initial, permut_type goal) {
+struct solution {
+    size_t touched;
+    size_t processed;
     std::vector<permut_type> steps;
-    while (goal != initial) {
-        steps.push_back(goal);
-        goal = queue.find_in_map(goal)->parent;
-    }
-    std::cout << steps.size() << "\n\n";
-    std::cout << permut_to_string(initial) << "\n\n";
-    auto it = steps.rbegin();
-    while (it != steps.rend()) {
-        std::cout << permut_to_string(*it) << "\n\n";
-        ++it;
-    }
-}
+};
 
-template <uint32_t psize = PUZZLE_SIZE, typename Heuristic>
-auto find_solution(permut_type initial, Heuristic heuristic_dist) {
+template <uint32_t psize, typename Heuristic>
+std::optional<solution> find_solution(permut_type initial, Heuristic heuristic_dist) {
     constexpr auto create_goal = []() -> permut_type {
         if constexpr (psize == 3) {
-            return permut_create({0, 1, 2, 3, 4, 5, 6, 7, 8});
+            return permut_create<psize>({0, 1, 2, 3, 4, 5, 6, 7, 8});
         }
-        return permut_create({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+        return permut_create<psize>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
     };
     constexpr permut_type goal = create_goal();
+    size_t processed = 0;
     puzzle_queue queue;
     queue.push(initial, 0, 0, heuristic_dist(initial));
     while (!queue.empty()) {
         auto current = queue.top();
         if (current.permut == goal) {
-            get_solution_steps(queue, initial, goal);
-            return true;
+            auto curr_goal = goal;
+            std::vector<permut_type> steps;
+            while (curr_goal != initial) {
+                steps.push_back(curr_goal);
+                curr_goal = queue.find_in_map(curr_goal)->parent;
+            }
+            steps.push_back(initial);
+            return solution{processed, queue.map_size(), std::move(steps)};
         }
         queue.pop();
+        ++processed;
         auto current_map_entry = *(queue.find_in_map(current.permut));
         permut_neighbors_itr<psize> neigbours(current.permut);
         for (auto n : neigbours) {
@@ -156,7 +158,7 @@ auto find_solution(permut_type initial, Heuristic heuristic_dist) {
             }
         }
     }
-    return false;
+    return std::nullopt;
 }
 
 }  // namespace puzzle
