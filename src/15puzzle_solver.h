@@ -127,7 +127,7 @@ std::optional<solution> find_solution(permut_type initial, Heuristic heuristic_d
     };
     constexpr permut_type goal = create_goal();
     size_t processed = 0;
-    const puzzle_queue queue;
+    puzzle_queue queue;
     queue.push(initial, 0, 0, heuristic_dist(initial));
     while (!queue.empty()) {
         const auto current = queue.top();
