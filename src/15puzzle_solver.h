@@ -70,15 +70,15 @@ public:
             current_m_entry = parent_m_entry;
         }
     }
-    const queue_entry& top() const {
+    const queue_entry& top() const noexcept {
         return permut_queue[0];
     }
-    void pop() {
+    void pop() noexcept {
         permut_queue[0] = permut_queue.back();
         permut_queue.pop_back();
         heapify(0);
     }
-    bool empty() const {
+    bool empty() const noexcept {
         return permut_queue.empty();
     }
     void decrease_key(map_entry& current_m_entry, permut_type parent_new, uint32_t dist_to_new) {
@@ -106,7 +106,7 @@ public:
         }
         return nullptr;
     }
-    size_t map_size() const {
+    size_t map_size() const noexcept {
         return permut_map.size();
     }
 };
