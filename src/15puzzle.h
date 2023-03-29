@@ -12,7 +12,7 @@ namespace puzzle {
 using permut_type = uint64_t;
 
 template <uint32_t psize>
-constexpr permut_type permut_create_from_partial(std::array<uint32_t, psize * psize - 1>& arr) {
+constexpr permut_type permut_create_from_partial(const std::array<uint32_t, psize * psize - 1>& arr) {
     constexpr auto offset = std::bit_width(psize * psize - 1);
     permut_type ret_p = 0;
     for (auto e : arr) {
@@ -25,7 +25,7 @@ constexpr permut_type permut_create_from_partial(std::array<uint32_t, psize * ps
 }
 
 template <uint32_t psize>
-constexpr permut_type permut_create(std::array<uint32_t, psize * psize>& arr) {
+constexpr permut_type permut_create(const std::array<uint32_t, psize * psize>& arr) {
     constexpr auto offset = std::bit_width(psize * psize - 1);
     permut_type ret_p = 0;
     for (auto e : arr) {
@@ -47,7 +47,7 @@ constexpr permut_type permut_create(std::initializer_list<uint32_t> p) {
 }
 
 template <uint32_t array_size>
-constexpr bool parity_check(std::array<unsigned, array_size>& arr) {
+constexpr bool parity_check(const std::array<unsigned, array_size>& arr) {
     size_t inv_count = 0;
     for (size_t i = 1; i < arr.size(); ++i) {
         for (size_t j = 0; j < i; ++j) {
@@ -73,7 +73,7 @@ permut_type permut_read(std::istream& stream) {
 }
 
 template <uint32_t psize>
-bool permut_check(std::array<unsigned, psize * psize> arr) {
+bool permut_check(const std::array<unsigned, psize * psize>& arr) {
     return arr[psize * psize - 1] != psize * psize - 1 && parity_check<psize * psize>(arr);
 }
 
@@ -82,7 +82,7 @@ std::array<uint32_t, psize * psize> permut_to_array(permut_type p) {
     constexpr int offset = std::bit_width(psize * psize - 1);
     constexpr uint32_t mask = ~(~0U << offset);
     std::array<uint32_t, psize* psize> ret_arr = {};
-    for (auto it = ret_arr.end() - 1; it >= ret_arr.begin(); --it) {
+    for (auto it = ret_arr.end() - 1; it != ret_arr.begin(); --it) {
         *it = p & mask;
         p >>= offset;
     }
@@ -91,7 +91,7 @@ std::array<uint32_t, psize * psize> permut_to_array(permut_type p) {
 
 template <uint32_t psize>
 std::ostream& permut_write(std::ostream& stream, permut_type permut, int width = 2) {
-    auto arr = puzzle::permut_to_array<psize>(permut);
+    const auto arr = puzzle::permut_to_array<psize>(permut);
     for (size_t i = 0; i < psize * psize; ++i) {
         stream << std::setw(width) << (arr[i] + 1) % (psize * psize);
         stream << (i % psize == (psize - 1) ? '\n' : ' ');
@@ -100,7 +100,7 @@ std::ostream& permut_write(std::ostream& stream, permut_type permut, int width =
 }
 
 template <uint32_t psize>
-uint32_t manhattan_dist(permut_type a) {
+constexpr uint32_t manhattan_dist(permut_type a) {
     constexpr int offset = std::bit_width(psize * psize - 1);
     constexpr uint32_t mask = ~(~0U << offset);
     constexpr auto diff = [](uint32_t a, uint32_t b) -> uint32_t {
@@ -145,10 +145,10 @@ public:
         constexpr int offset = std::bit_width(psize * psize - 1);
         constexpr permut_type mask = ~(~0U << offset);
         constexpr int max_offset = (psize * psize - 1) * offset;
-        int empty_offset = find_empty<psize>(permut);
-        permut_type clean_mask = mask << empty_offset;
-        permut_type empty = permut & clean_mask;
-        permut_type clean_permut = permut & ~clean_mask;
+        const int empty_offset = find_empty<psize>(permut);
+        const permut_type clean_mask = mask << empty_offset;
+        const permut_type empty = permut & clean_mask;
+        const permut_type clean_permut = permut & ~clean_mask;
         if (int curr_offset = empty_offset + psize * offset; curr_offset <= max_offset) {
             permut_type curr_mask = mask << curr_offset;
             neighbors[len] = ((clean_permut & curr_mask) >> (curr_offset - empty_offset)) | (clean_permut & ~curr_mask);

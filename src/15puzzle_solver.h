@@ -3,7 +3,6 @@
 #include <iostream>
 #include <map>
 #include <optional>
-#include <variant>
 #include <vector>
 
 #include "15puzzle.h"
@@ -128,10 +127,10 @@ std::optional<solution> find_solution(permut_type initial, Heuristic heuristic_d
     };
     constexpr permut_type goal = create_goal();
     size_t processed = 0;
-    puzzle_queue queue;
+    const puzzle_queue queue;
     queue.push(initial, 0, 0, heuristic_dist(initial));
     while (!queue.empty()) {
-        auto current = queue.top();
+        const auto current = queue.top();
         if (current.permut == goal) {
             auto curr_goal = goal;
             std::vector<permut_type> steps;
@@ -144,10 +143,10 @@ std::optional<solution> find_solution(permut_type initial, Heuristic heuristic_d
         }
         queue.pop();
         ++processed;
-        auto current_map_entry = *(queue.find_in_map(current.permut));
+        const auto current_map_entry = *(queue.find_in_map(current.permut));
         permut_neighbors_itr<psize> neigbours(current.permut);
         for (auto n : neigbours) {
-            uint32_t dist_new = current_map_entry.dist_to + 1;
+            const uint32_t dist_new = current_map_entry.dist_to + 1;
             map_entry* neigbour_map_entry = queue.find_in_map(n);
             if (neigbour_map_entry != nullptr) {
                 if (dist_new < neigbour_map_entry->dist_to) {
