@@ -79,10 +79,10 @@ bool permut_check(const std::array<unsigned, psize * psize>& arr) {
 
 template <uint32_t psize>
 std::array<uint32_t, psize * psize> permut_to_array(permut_type p) {
-    constexpr int offset = std::bit_width(psize * psize - 1);
-    constexpr uint32_t mask = ~(~0U << offset);
+    static constexpr int offset = std::bit_width(psize * psize - 1);
+    static constexpr uint32_t mask = ~(~0U << offset);
     std::array<uint32_t, psize* psize> ret_arr = {};
-    for (auto it = ret_arr.end() - 1; it != ret_arr.begin(); --it) {
+    for (auto it = ret_arr.rbegin(); it != ret_arr.rend(); ++it) {
         *it = p & mask;
         p >>= offset;
     }
@@ -109,12 +109,14 @@ constexpr uint32_t manhattan_dist(permut_type a) {
     uint32_t dist = 0;
     for (uint32_t pozz = psize * psize - 1; pozz != static_cast<uint32_t>(-1); --pozz) {
         auto temp = a & mask;
-        auto pozz_row = pozz / psize;
-        auto pozz_col = pozz % psize;
-        auto temp_row = temp / psize;
-        auto temp_col = temp % psize;
-        dist += diff(pozz_row, temp_row);
-        dist += diff(pozz_col, temp_col);
+        if (temp != psize * psize - 1) {
+            auto pozz_row = pozz / psize;
+            auto pozz_col = pozz % psize;
+            auto temp_row = temp / psize;
+            auto temp_col = temp % psize;
+            dist += diff(pozz_row, temp_row);
+            dist += diff(pozz_col, temp_col);
+        }
         a >>= offset;
     }
     return dist;
@@ -133,8 +135,6 @@ constexpr int find_empty(permut_type permut) {
     return empty_offset;
 }
 
-// namespace internal {
-
 template <uint32_t psize>
 class permut_neighbors_itr {
     permut_type neighbors[4];
@@ -142,9 +142,9 @@ class permut_neighbors_itr {
 
 public:
     explicit permut_neighbors_itr(permut_type permut) {
-        constexpr int offset = std::bit_width(psize * psize - 1);
-        constexpr permut_type mask = ~(~0U << offset);
-        constexpr int max_offset = (psize * psize - 1) * offset;
+        static constexpr int offset = std::bit_width(psize * psize - 1);
+        static constexpr permut_type mask = ~(~0U << offset);
+        static constexpr int max_offset = (psize * psize - 1) * offset;
         const int empty_offset = find_empty<psize>(permut);
         const permut_type clean_mask = mask << empty_offset;
         const permut_type empty = permut & clean_mask;
@@ -181,6 +181,5 @@ public:
         return &neighbors[len];
     }
 };
-//}  // namespace internal
 
 }  // namespace puzzle

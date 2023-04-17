@@ -17,7 +17,7 @@ enum print_mode {
 void solution_print(std::ostream& stream, const puzzle::solution& sol, int mode = print_mode::basic) {
     stream << sol.processed << ' ' << sol.touched << ' ' << sol.steps.size() << "\n";
     if (mode & print_mode::w_initial) {
-        puzzle::permut_write<PUZZLE_SIZE>(stream, sol.steps.back()) << ".\n";
+        puzzle::permut_write<PUZZLE_SIZE>(stream, sol.steps.back()) << "...\n";
     }
     if (mode & print_mode::w_steps) {
         auto it = sol.steps.crbegin();
@@ -47,9 +47,10 @@ int main() {
             std::shuffle(temp_partial_arr.begin(), temp_partial_arr.end(), src_of_randomnes);
         } while (!puzzle::parity_check<PUZZLE_SIZE * PUZZLE_SIZE - 1>(temp_partial_arr));
         auto permut = puzzle::permut_create_from_partial<PUZZLE_SIZE>(temp_partial_arr);
+        std::cout << std::hex << permut << std::dec << "\n";
         auto sol = puzzle::find_solution<PUZZLE_SIZE, decltype(heuristic)>(permut, heuristic);
         if (sol.has_value()) {
-            solution_print(std::cout, *sol, print_mode::w_initial);
+            solution_print(std::cout, *sol, print_mode::basic);
         } else {
             std::cout << "no solution\n";
         }

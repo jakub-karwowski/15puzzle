@@ -46,9 +46,27 @@ class puzzle_queue {
             top = r;
         }
         if (root != top) {
-            std::swap(permut_map[root].queue_index, permut_map[top].queue_index);
+            map_entry& root_new_m_entry = permut_map[top];
+            std::swap(permut_map[root].queue_index, root_new_m_entry.queue_index);
             std::swap(permut_queue[root], permut_queue[top]);
-            heapify(top);
+            heapify(top, root_new_m_entry);
+        }
+    }
+    void heapify(size_t root, map_entry& root_entry) {
+        auto l = puzzle_queue::left_child(root);
+        auto r = puzzle_queue::right_child(root);
+        size_t top = root;
+        if (l <= permut_queue.size() && comp(permut_queue[l], permut_queue[root])) {
+            top = l;
+        }
+        if (r <= permut_queue.size() && comp(permut_queue[r], permut_queue[top])) {
+            top = r;
+        }
+        if (root != top) {
+            map_entry& root_new_m_entry = permut_map[top];
+            std::swap(root_entry.queue_index, root_new_m_entry.queue_index);
+            std::swap(permut_queue[root], permut_queue[top]);
+            heapify(top, root_new_m_entry);
         }
     }
     void build_heap() noexcept {
