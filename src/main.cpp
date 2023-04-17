@@ -6,7 +6,7 @@
 
 #include "15puzzle_solver.h"
 
-#define PUZZLE_SIZE 4
+#define PUZZLE_SIZE 3
 
 enum print_mode {
     basic = 0,
