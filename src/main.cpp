@@ -6,7 +6,7 @@
 
 #include "15puzzle_solver.h"
 
-#define PUZZLE_SIZE 3
+#define PUZZLE_SIZE 4
 
 enum print_mode {
     basic = 0,
@@ -50,7 +50,7 @@ int main() {
         std::cout << std::hex << permut << std::dec << "\n";
         auto sol = puzzle::find_solution<PUZZLE_SIZE, decltype(heuristic)>(permut, heuristic);
         if (sol.has_value()) {
-            solution_print(std::cout, *sol, print_mode::basic);
+            solution_print(std::cout, *sol, print_mode::basic | print_mode::w_steps);
         } else {
             std::cout << "no solution\n";
         }

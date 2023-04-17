@@ -135,7 +135,7 @@ std::optional<solution> find_solution(permut_type initial, Heuristic heuristic_d
                 steps.push_back(current->first);
                 current = current->second.parent;
             } while (current->first != initial);
-            return solution{processed, queue.map_size(), std::move(steps)};
+            return solution{queue.map_size(), processed, std::move(steps)};
         }
         ++processed;
         queue.pop();
