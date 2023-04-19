@@ -10,6 +10,7 @@
 
 namespace puzzle {
 using permut_type = uint64_t;
+using dist_type = uint16_t;
 
 template <uint32_t psize>
 constexpr permut_type permut_create_from_partial(const std::array<uint32_t, psize * psize - 1>& arr) {
@@ -100,13 +101,13 @@ std::ostream& permut_write(std::ostream& stream, permut_type permut, int width =
 }
 
 template <uint32_t psize>
-constexpr uint32_t manhattan_dist(permut_type a) {
+constexpr dist_type manhattan_dist(permut_type a) {
     constexpr int offset = std::bit_width(psize * psize - 1);
     constexpr uint32_t mask = ~(~0U << offset);
     constexpr auto diff = [](uint32_t a, uint32_t b) -> uint32_t {
         return a > b ? a - b : b - a;
     };
-    uint32_t dist = 0;
+    dist_type dist = 0;
     for (uint32_t pozz = psize * psize - 1; pozz != static_cast<uint32_t>(-1); --pozz) {
         auto temp = a & mask;
         if (temp != psize * psize - 1) {
@@ -123,7 +124,7 @@ constexpr uint32_t manhattan_dist(permut_type a) {
 }
 
 template <uint32_t psize>
-constexpr uint32_t linear_conflict(permut_type a) {
+constexpr dist_type linear_conflict(permut_type a) {
     constexpr uint32_t empty = psize * psize - 1;
     auto find_max_nonzero = [](std::array<int, psize>& arr) {
         size_t max_pos = psize;
@@ -197,7 +198,7 @@ constexpr uint32_t linear_conflict(permut_type a) {
             nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
         }
     }
-    uint32_t sum = 0;
+    dist_type sum = 0;
     for (auto e : n_row_resolve) {
         sum += e;
     }
@@ -208,7 +209,7 @@ constexpr uint32_t linear_conflict(permut_type a) {
 }
 
 template <uint32_t psize>
-uint32_t manhattan_dist_with_lc(permut_type a) {
+dist_type manhattan_dist_with_lc(permut_type a) {
     return manhattan_dist<psize>(a) + linear_conflict<psize>(a);
 }
 
@@ -224,6 +225,78 @@ constexpr int find_empty(permut_type permut) {
     }
     return empty_offset;
 }
+
+template <uint32_t psize>
+class permut_neighbors_itr_winfo {
+public:
+    permut_type neighbors[4];
+    int shift_info[4];
+    unsigned len = 0;
+
+    explicit permut_neighbors_itr_winfo(permut_type permut) {
+        static constexpr int offset = std::bit_width(psize * psize - 1);
+        static constexpr permut_type mask = ~(~0U << offset);
+        static constexpr int max_offset = (psize * psize - 1) * offset;
+        const int empty_offset = find_empty<psize>(permut);
+        const permut_type clean_mask = mask << empty_offset;
+        const permut_type empty = permut & clean_mask;
+        const permut_type clean_permut = permut & ~clean_mask;
+        // shift down
+        if (int curr_offset = empty_offset + psize * offset; curr_offset <= max_offset) {
+            permut_type curr_mask = mask << curr_offset;
+            permut_type curr_tile = (clean_permut & curr_mask);
+            neighbors[len] = (curr_tile >> (curr_offset - empty_offset)) | (clean_permut & ~curr_mask);
+            neighbors[len] |= (empty << (curr_offset - empty_offset));
+            curr_tile >>= curr_offset;
+            int from_row = psize - 1 - curr_offset / (offset * psize);
+            int dest_row = curr_tile / psize;
+            shift_info[len] = from_row <= dest_row ? -1 : 1;
+            ++len;
+        }
+        // shift left
+        if (int curr_offset = empty_offset - offset; curr_offset >= 0 && empty_offset / (psize * offset) == curr_offset / (psize * offset)) {
+            permut_type curr_mask = mask << curr_offset;
+            permut_type curr_tile = (clean_permut & curr_mask);
+            neighbors[len] = (curr_tile << offset) | (clean_permut & ~curr_mask);
+            neighbors[len] |= (empty >> offset);
+            curr_tile >>= curr_offset;
+            int from_col = psize - 1 - ((curr_offset / offset) % psize);
+            int dest_col = curr_tile % psize;
+            shift_info[len] = dest_col <= from_col ? -1 : 1;
+            ++len;
+        }
+        // shift up
+        if (int curr_offset = empty_offset - psize * offset; curr_offset >= 0) {
+            permut_type curr_mask = mask << curr_offset;
+            permut_type curr_tile = (clean_permut & curr_mask);
+            neighbors[len] = (curr_tile << (empty_offset - curr_offset)) | (clean_permut & ~curr_mask);
+            neighbors[len] |= (empty >> (empty_offset - curr_offset));
+            curr_tile >>= curr_offset;
+            int from_row = psize - 1 - curr_offset / (offset * psize);
+            int dest_row = curr_tile / psize;
+            shift_info[len] = from_row >= dest_row ? -1 : 1;
+            ++len;
+        }
+        // shift right
+        if (int curr_offset = empty_offset + offset; curr_offset <= max_offset && empty_offset / (psize * offset) == curr_offset / (psize * offset)) {
+            permut_type curr_mask = mask << curr_offset;
+            permut_type curr_tile = (clean_permut & curr_mask);
+            neighbors[len] = (curr_tile >> offset) | (clean_permut & ~curr_mask);
+            neighbors[len] |= (empty << offset);
+            curr_tile >>= curr_offset;
+            int from_col = psize - 1 - ((curr_offset / offset) % psize);
+            int dest_col = curr_tile % psize;
+            shift_info[len] = dest_col >= from_col ? -1 : 1;
+            ++len;
+        }
+    }
+    permut_type* begin() {
+        return &neighbors[0];
+    }
+    permut_type* end() {
+        return &neighbors[len];
+    }
+};
 
 template <uint32_t psize>
 class permut_neighbors_itr {

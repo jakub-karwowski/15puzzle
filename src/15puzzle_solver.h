@@ -15,8 +15,8 @@ using map_iterator = std::map<permut_type, map_entry>::iterator;
 struct map_entry {
     map_iterator parent;
     uint32_t queue_index;
-    uint32_t dist_to;
-    uint32_t dist_h;
+    dist_type dist_to;
+    dist_type dist_h;
 };
 
 bool comp(map_iterator lhs, map_iterator rhs) {
@@ -69,7 +69,7 @@ class puzzle_queue {
     }
 
 public:
-    void push(permut_type entry, map_iterator parent, uint32_t dist_to, uint32_t dist_from) {
+    void push(permut_type entry, map_iterator parent, dist_type dist_to, dist_type dist_from) {
         size_t i = permut_queue.size();
         map_iterator current_m_entry = permut_map.insert(std::pair{entry, map_entry{parent, static_cast<uint32_t>(i), dist_to, dist_from}}).first;
         permut_queue.push_back(current_m_entry);
@@ -92,7 +92,7 @@ public:
     bool empty() const noexcept {
         return permut_queue.empty();
     }
-    void decrease_key(map_iterator current_m_entry, map_iterator parent_new, uint32_t dist_to_new) {
+    void decrease_key(map_iterator current_m_entry, map_iterator parent_new, dist_type dist_to_new) {
         size_t i = current_m_entry->second.queue_index;
         current_m_entry->second.dist_to = dist_to_new;
         current_m_entry->second.parent = parent_new;
