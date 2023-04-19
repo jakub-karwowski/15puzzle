@@ -123,6 +123,96 @@ constexpr uint32_t manhattan_dist(permut_type a) {
 }
 
 template <uint32_t psize>
+constexpr uint32_t linear_conflict(permut_type a) {
+    constexpr uint32_t empty = psize * psize - 1;
+    auto find_max_nonzero = [](std::array<int, psize>& arr) {
+        size_t max_pos = psize;
+        int max_val = 1;
+        for (size_t i = 0; i < arr.size(); ++i) {
+            if (arr[i] >= max_val) {
+                max_val = arr[i];
+                max_pos = i;
+            }
+        }
+        return max_pos;
+    };
+    auto permut_array = permut_to_array<psize>(a);
+    std::array<int, psize> n_row_resolve{};
+    for (size_t row = 0; row < psize; ++row) {
+        std::array<int, psize> n_tiles_in_conflict{};
+        for (size_t col = 0; col < psize; ++col) {
+            if (permut_array[row * psize + col] == empty ||
+                permut_array[row * psize + col] >= (row + 1) * psize ||
+                permut_array[row * psize + col] < row * psize) {
+                continue;
+            }
+            for (size_t other = col + 1; other < psize; ++other) {
+                auto curr = permut_array[row * psize + other];
+                if (curr < (row + 1) * psize &&
+                    curr >= row * psize &&
+                    curr != empty &&
+                    permut_array[row * psize + col] > curr) {
+                    ++n_tiles_in_conflict[col];
+                }
+            }
+        }
+        size_t nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
+        while (nonzero_pos < psize) {
+            n_tiles_in_conflict[nonzero_pos] = 0;
+            for (size_t other = nonzero_pos + 1; other < psize; ++other) {
+                if (permut_array[row * psize + nonzero_pos] > permut_array[row * psize + other]) {
+                    --n_tiles_in_conflict[other];
+                }
+            }
+            ++n_row_resolve[row];
+            nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
+        }
+    }
+    std::array<int, psize> n_col_resolve{};
+    for (size_t col = 0; col < psize; ++col) {
+        std::array<int, psize> n_tiles_in_conflict{};
+        for (size_t row = 0; row < psize; ++row) {
+            if (permut_array[row * psize + col] == empty ||
+                permut_array[row * psize + col] % psize != col) {
+                continue;
+            }
+            for (size_t other = row + 1; other < psize; ++other) {
+                auto curr = permut_array[other * psize + col];
+                if (curr % psize == col &&
+                    curr != empty &&
+                    permut_array[row * psize + col] > curr) {
+                    ++n_tiles_in_conflict[row];
+                }
+            }
+        }
+        size_t nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
+        while (nonzero_pos < psize) {
+            n_tiles_in_conflict[nonzero_pos] = 0;
+            for (size_t other = nonzero_pos + 1; other < psize; ++other) {
+                if (permut_array[nonzero_pos * psize + col] > permut_array[other * psize + col]) {
+                    --n_tiles_in_conflict[other];
+                }
+            }
+            ++n_col_resolve[col];
+            nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
+        }
+    }
+    uint32_t sum = 0;
+    for (auto e : n_row_resolve) {
+        sum += e;
+    }
+    for (auto e : n_col_resolve) {
+        sum += e;
+    }
+    return 2 * sum;
+}
+
+template <uint32_t psize>
+uint32_t manhattan_dist_with_lc(permut_type a) {
+    return manhattan_dist<psize>(a) + linear_conflict<psize>(a);
+}
+
+template <uint32_t psize>
 constexpr int find_empty(permut_type permut) {
     constexpr int offset = std::bit_width(psize * psize - 1);
     constexpr permut_type mask = ~(~0U << offset);

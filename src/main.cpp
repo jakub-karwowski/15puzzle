@@ -36,8 +36,11 @@ int main() {
             return std::array{0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U, 10U, 11U, 12U, 13U, 14U};
         }
     };
+    // auto permut = puzzle::permut_create_from_partial<PUZZLE_SIZE>({0U, 5U, 2U, 3U, 4U, 1U, 6U, 7U, 8U, 9U, 10U, 11U, 12U, 13U, 14U});
+    // std::cout << puzzle::linear_conflict<PUZZLE_SIZE>(permut) << '\n';
     constexpr auto initial_permut = create_initial_permut();
-    auto heuristic = puzzle::manhattan_dist<PUZZLE_SIZE>;
+    // auto heuristic = puzzle::manhattan_dist<PUZZLE_SIZE>;
+    auto heuristic = puzzle::manhattan_dist_with_lc<PUZZLE_SIZE>;
     std::random_device random_device;
     std::mt19937 src_of_randomnes(random_device());
     int no_trials = 1;
@@ -47,10 +50,11 @@ int main() {
             std::shuffle(temp_partial_arr.begin(), temp_partial_arr.end(), src_of_randomnes);
         } while (!puzzle::parity_check<PUZZLE_SIZE * PUZZLE_SIZE - 1>(temp_partial_arr));
         auto permut = puzzle::permut_create_from_partial<PUZZLE_SIZE>(temp_partial_arr);
+        // auto permut = 0x751094382a6debcf;
         std::cout << std::hex << permut << std::dec << "\n";
         auto sol = puzzle::find_solution<PUZZLE_SIZE, decltype(heuristic)>(permut, heuristic);
         if (sol.has_value()) {
-            solution_print(std::cout, *sol, print_mode::basic | print_mode::w_steps);
+            solution_print(std::cout, *sol, print_mode::basic);
         } else {
             std::cout << "no solution\n";
         }

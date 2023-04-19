@@ -20,8 +20,17 @@ struct map_entry {
 };
 
 bool comp(map_iterator lhs, map_iterator rhs) {
-    return (lhs->second.dist_to + lhs->second.dist_h) <
-           (rhs->second.dist_to + rhs->second.dist_h);
+    // return (lhs->second.dist_to + lhs->second.dist_h) <
+    //        (rhs->second.dist_to + rhs->second.dist_h);
+    auto sum_l = lhs->second.dist_to + lhs->second.dist_h;
+    auto sum_r = rhs->second.dist_to + rhs->second.dist_h;
+    if (sum_l < sum_r) {
+        return true;
+    } else if (sum_l == sum_r) {
+        return lhs->second.dist_h < rhs->second.dist_h;
+    } else {
+        return false;
+    }
 }
 
 class puzzle_queue {
@@ -104,7 +113,7 @@ public:
         return permut_map.size();
     }
 
-    map_iterator map_end() {
+    map_iterator map_end() noexcept {
         return permut_map.end();
     }
 };
