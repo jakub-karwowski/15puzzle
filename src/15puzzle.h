@@ -142,75 +142,70 @@ constexpr dist_type linear_conflict(permut_type a) {
         }
         return max_pos;
     };
-    auto permut_array = permut_to_array<psize>(a);
-    dist_type n_row_resolve = 0;
-    for (size_t row = 0; row < psize; ++row) {
-        std::array<int, psize> n_tiles_in_conflict{};
-        for (size_t col = 0; col < psize; ++col) {
-            if (permut_array[row * psize + col] == empty ||
-                permut_array[row * psize + col] >= (row + 1) * psize ||
-                permut_array[row * psize + col] < row * psize) {
-                continue;
+    const auto permut_array = permut_to_array<psize>(a);
+    dist_type lc_value = 0;
+    for (size_t first = 0; first < psize; ++first) {
+        std::array<int, psize> n_tiles_in_conflict_row{};
+        std::array<int, psize> n_tiles_in_conflict_col{};
+        for (size_t second = 0; second < psize - 1; ++second) {
+            auto start_tile_row = permut_array[first * psize + second];
+            if (start_tile_row != empty && start_tile_row < (first + 1) * psize && start_tile_row >= first * psize) {
+                for (size_t other = second + 1; other < psize; ++other) {
+                    auto other_tile_row = permut_array[first * psize + other];
+                    if (other_tile_row != empty && start_tile_row > other_tile_row &&
+                        other_tile_row < (first + 1) * psize && other_tile_row >= first * psize) {
+                        ++n_tiles_in_conflict_row[second];
+                    }
+                }
             }
-            for (size_t other = col + 1; other < psize; ++other) {
-                auto curr = permut_array[row * psize + other];
-                if (curr < (row + 1) * psize &&
-                    curr >= row * psize &&
-                    curr != empty &&
-                    permut_array[row * psize + col] > curr) {
-                    ++n_tiles_in_conflict[col];
+            auto start_tile_col = permut_array[second * psize + first];
+            if (start_tile_col != empty && start_tile_col % psize == first) {
+                for (size_t other = second + 1; other < psize; ++other) {
+                    auto other_tile_col = permut_array[other * psize + first];
+                    if (other_tile_col != empty && start_tile_col > other_tile_col && other_tile_col % psize == first) {
+                        ++n_tiles_in_conflict_col[second];
+                    }
                 }
             }
         }
-        size_t nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
-        while (nonzero_pos < psize) {
-            n_tiles_in_conflict[nonzero_pos] = 0;
-            for (size_t other = nonzero_pos + 1; other < psize; ++other) {
-                auto curr = permut_array[row * psize + other];
-                if (curr < (row + 1) * psize &&
-                    curr >= row * psize &&
-                    curr != empty &&
-                    permut_array[row * psize + nonzero_pos] > curr) {
-                    --n_tiles_in_conflict[other];
+        {
+            size_t nonzero_pos = find_max_nonzero(n_tiles_in_conflict_row);
+            while (nonzero_pos < psize) {
+                n_tiles_in_conflict_row[nonzero_pos] = 0;
+                auto nonzero_tile = permut_array[first * psize + nonzero_pos];
+                for (size_t other = nonzero_pos + 1; other < psize; ++other) {
+                    auto other_tile_col = permut_array[first * psize + other];
+                    if (other_tile_col != empty && nonzero_tile > other_tile_col &&
+                        other_tile_col < (first + 1) * psize && other_tile_col >= first * psize) {
+                        --n_tiles_in_conflict_row[other];
+                    }
                 }
-            }
-            ++n_row_resolve;
-            nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
-        }
-    }
-    dist_type n_col_resolve = 0;
-    for (size_t col = 0; col < psize; ++col) {
-        std::array<int, psize> n_tiles_in_conflict{};
-        for (size_t row = 0; row < psize; ++row) {
-            if (permut_array[row * psize + col] == empty ||
-                permut_array[row * psize + col] % psize != col) {
-                continue;
-            }
-            for (size_t other = row + 1; other < psize; ++other) {
-                auto curr = permut_array[other * psize + col];
-                if (curr % psize == col &&
-                    curr != empty &&
-                    permut_array[row * psize + col] > curr) {
-                    ++n_tiles_in_conflict[row];
-                }
+                ++lc_value;
+                nonzero_pos = find_max_nonzero(n_tiles_in_conflict_row);
             }
         }
-        size_t nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
-        while (nonzero_pos < psize) {
-            n_tiles_in_conflict[nonzero_pos] = 0;
-            for (size_t other = nonzero_pos + 1; other < psize; ++other) {
-                auto curr = permut_array[other * psize + col];
-                if (curr % psize == col &&
-                    curr != empty &&
-                    permut_array[nonzero_pos * psize + col] > curr) {
-                    --n_tiles_in_conflict[other];
+        {
+            size_t nonzero_pos = find_max_nonzero(n_tiles_in_conflict_col);
+            while (nonzero_pos < psize) {
+                n_tiles_in_conflict_col[nonzero_pos] = 0;
+                auto nonzero_tile = permut_array[nonzero_pos * psize + first];
+                for (size_t other = nonzero_pos + 1; other < psize; ++other) {
+                    auto other_tile = permut_array[other * psize + first];
+                    if (other_tile != empty && nonzero_tile > other_tile && other_tile % psize == first) {
+                        --n_tiles_in_conflict_col[other];
+                    }
                 }
+                ++lc_value;
+                nonzero_pos = find_max_nonzero(n_tiles_in_conflict_col);
             }
-            ++n_col_resolve;
-            nonzero_pos = find_max_nonzero(n_tiles_in_conflict);
         }
     }
-    return 2 * (n_row_resolve + n_col_resolve);
+    return lc_value * 2;
+}
+
+template <uint32_t psize>
+constexpr dist_type manhattan_dist_wlc(permut_type a) {
+    return manhattan_dist<psize>(a) + linear_conflict<psize>(a);
 }
 
 template <uint32_t psize>
@@ -249,7 +244,7 @@ public:
             curr_tile >>= curr_offset;
             int from_row = psize - 1 - curr_offset / (offset * psize);
             int dest_row = curr_tile / psize;
-            neighbors[len].second = from_row <= dest_row ? -1 : 1;
+            neighbors[len].second = from_row < dest_row ? -1 : 1;
             ++len;
         }
         // shift left
@@ -261,7 +256,7 @@ public:
             curr_tile >>= curr_offset;
             int from_col = psize - 1 - ((curr_offset / offset) % psize);
             int dest_col = curr_tile % psize;
-            neighbors[len].second = dest_col <= from_col ? -1 : 1;
+            neighbors[len].second = dest_col < from_col ? -1 : 1;
             ++len;
         }
         // shift up
@@ -273,7 +268,7 @@ public:
             curr_tile >>= curr_offset;
             int from_row = psize - 1 - curr_offset / (offset * psize);
             int dest_row = curr_tile / psize;
-            neighbors[len].second = from_row >= dest_row ? -1 : 1;
+            neighbors[len].second = from_row > dest_row ? -1 : 1;
             ++len;
         }
         // shift right
@@ -285,7 +280,7 @@ public:
             curr_tile >>= curr_offset;
             int from_col = psize - 1 - ((curr_offset / offset) % psize);
             int dest_col = curr_tile % psize;
-            neighbors[len].second = dest_col >= from_col ? -1 : 1;
+            neighbors[len].second = dest_col > from_col ? -1 : 1;
             ++len;
         }
     }
