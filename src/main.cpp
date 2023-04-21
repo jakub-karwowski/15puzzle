@@ -28,7 +28,7 @@ void solution_print(std::ostream& stream, const puzzle::solution& sol, int mode 
     }
 }
 
-int main() {
+puzzle::permut_type get_random_permut(std::mt19937& src_of_randomnes) {
     constexpr auto create_initial_permut = []() -> auto{
         if constexpr (PUZZLE_SIZE == 3) {
             return std::array{0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U};
@@ -36,28 +36,26 @@ int main() {
             return std::array{0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U, 10U, 11U, 12U, 13U, 14U};
         }
     };
-    // auto permut = puzzle::permut_create_from_partial<PUZZLE_SIZE>({0U, 5U, 2U, 3U, 4U, 1U, 6U, 7U, 8U, 9U, 10U, 11U, 12U, 13U, 14U});
-    // std::cout << puzzle::linear_conflict<PUZZLE_SIZE>(permut) << '\n';
     constexpr auto initial_permut = create_initial_permut();
-    // auto heuristic = puzzle::manhattan_dist<PUZZLE_SIZE>;
-    auto heuristic = puzzle::manhattan_dist_with_lc<PUZZLE_SIZE>;
+    std::array temp_partial_arr{initial_permut};
+    do {
+        std::shuffle(temp_partial_arr.begin(), temp_partial_arr.end(), src_of_randomnes);
+    } while (!puzzle::parity_check<PUZZLE_SIZE * PUZZLE_SIZE - 1>(temp_partial_arr));
+    return puzzle::permut_create_from_partial<PUZZLE_SIZE>(temp_partial_arr);
+}
+
+int main() {
     std::random_device random_device;
     std::mt19937 src_of_randomnes(random_device());
-    int no_trials = 1;
-    for (int i = 0; i < no_trials; ++i) {
-        std::array temp_partial_arr{initial_permut};
-        do {
-            std::shuffle(temp_partial_arr.begin(), temp_partial_arr.end(), src_of_randomnes);
-        } while (!puzzle::parity_check<PUZZLE_SIZE * PUZZLE_SIZE - 1>(temp_partial_arr));
-        auto permut = puzzle::permut_create_from_partial<PUZZLE_SIZE>(temp_partial_arr);
-        // auto permut = 0x751094382a6debcf;
-        std::cout << std::hex << permut << std::dec << "\n";
-        auto sol = puzzle::find_solution<PUZZLE_SIZE, decltype(heuristic)>(permut, heuristic);
-        if (sol.has_value()) {
-            solution_print(std::cout, *sol, print_mode::basic);
-        } else {
-            std::cout << "no solution\n";
-        }
+    auto permut = get_random_permut(src_of_randomnes);
+    std::cout << std::hex << permut << std::dec << "\n";
+    // auto sol = puzzle::find_solution_manhattan<PUZZLE_SIZE>(permut);
+    auto additional = puzzle::linear_conflict<PUZZLE_SIZE>;
+    auto sol = puzzle::find_solution_manhattan_wadditional<PUZZLE_SIZE, decltype(additional)>(permut, additional);
+    if (sol.has_value()) {
+        solution_print(std::cout, *sol, print_mode::basic);
+    } else {
+        std::cout << "no solution\n";
     }
     return 0;
 }

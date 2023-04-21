@@ -138,10 +138,11 @@ std::optional<solution> find_solution(permut_type initial, Heuristic heuristic_d
         map_iterator current = queue.top();
         if (current->first == goal) {
             std::vector<permut_type> steps;
-            do {
+            while (current->first != initial) {
                 steps.push_back(current->first);
                 current = current->second.parent;
-            } while (current->first != initial);
+            }
+            steps.push_back(initial);
             return solution{queue.map_size(), processed, std::move(steps)};
         }
         ++processed;
@@ -162,8 +163,49 @@ std::optional<solution> find_solution(permut_type initial, Heuristic heuristic_d
     return std::nullopt;
 }
 
+template <uint32_t psize>
+std::optional<solution> find_solution_manhattan(permut_type initial) {
+    constexpr auto create_goal = []() -> permut_type {
+        if constexpr (psize == 3) {
+            return permut_create<psize>({0, 1, 2, 3, 4, 5, 6, 7, 8});
+        }
+        return permut_create<psize>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    };
+    constexpr permut_type goal = create_goal();
+    size_t processed = 0;
+    puzzle_queue queue;
+    queue.push(initial, queue.map_end(), 0, manhattan_dist<psize>(initial));
+    while (!queue.empty()) {
+        map_iterator current = queue.top();
+        if (current->first == goal) {
+            std::vector<permut_type> steps;
+            while (current->first != initial) {
+                steps.push_back(current->first);
+                current = current->second.parent;
+            }
+            steps.push_back(initial);
+            return solution{queue.map_size(), processed, std::move(steps)};
+        }
+        ++processed;
+        queue.pop();
+        permut_neighbors_itr_winfo<psize> neighbours(current->first);
+        for (auto& n : neighbours) {
+            const uint32_t dist_new = current->second.dist_to + 1;
+            map_iterator n_map_itr = queue.find(n.first);
+            if (n_map_itr == queue.map_end()) {
+                queue.push(n.first, current, dist_new, manhattan_dist_winfo<psize>(current->second.dist_h, n.second));
+            } else {
+                if (dist_new < n_map_itr->second.dist_to) {
+                    queue.decrease_key(n_map_itr, current, dist_new);
+                }
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 template <uint32_t psize, typename Heuristic>
-std::optional<solution> find_solution_manhattan(permut_type initial, Heuristic additional) {
+std::optional<solution> find_solution_manhattan_wadditional(permut_type initial, Heuristic additional) {
     constexpr auto create_goal = []() -> permut_type {
         if constexpr (psize == 3) {
             return permut_create<psize>({0, 1, 2, 3, 4, 5, 6, 7, 8});
@@ -178,10 +220,11 @@ std::optional<solution> find_solution_manhattan(permut_type initial, Heuristic a
         map_iterator current = queue.top();
         if (current->first == goal) {
             std::vector<permut_type> steps;
-            do {
+            while (current->first != initial) {
                 steps.push_back(current->first);
                 current = current->second.parent;
-            } while (current->first != initial);
+            }
+            steps.push_back(initial);
             return solution{queue.map_size(), processed, std::move(steps)};
         }
         ++processed;

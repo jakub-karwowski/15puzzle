@@ -10,7 +10,7 @@
 
 namespace puzzle {
 using permut_type = uint64_t;
-using dist_type = uint16_t;
+using dist_type = uint8_t;
 
 template <uint32_t psize>
 constexpr permut_type permut_create_from_partial(const std::array<uint32_t, psize * psize - 1>& arr) {
