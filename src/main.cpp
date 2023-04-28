@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <iostream>
 #include <random>
-#include <ranges>
 #include <stdexcept>
 
 #include "15puzzle_solver.h"
@@ -48,12 +47,12 @@ int main() {
     std::random_device random_device;
     std::mt19937 src_of_randomnes(random_device());
     auto permut = get_random_permut(src_of_randomnes);
-    std::cout << std::hex << permut << std::dec << "\n";
+    puzzle::permut_write<PUZZLE_SIZE>(std::cout, permut) << '\n';
     // auto sol = puzzle::find_solution_manhattan<PUZZLE_SIZE>(permut);
     auto additional = puzzle::linear_conflict<PUZZLE_SIZE>;
     auto sol = puzzle::find_solution_manhattan_wadditional<PUZZLE_SIZE, decltype(additional)>(permut, additional);
     if (sol.has_value()) {
-        solution_print(std::cout, *sol, print_mode::basic);
+        solution_print(std::cout, *sol, print_mode::basic | print_mode::w_steps);
     } else {
         std::cout << "no solution\n";
     }
